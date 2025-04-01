@@ -70,10 +70,10 @@ class PostViewHolder(
 
             like.setOnClickListener {
                 if(post.likedByMe){
-                    onInteractionListener.onLike(post)
+                    onInteractionListener.onDisLike(post)
                 }
                 if(!post.likedByMe){
-                    onInteractionListener.onDisLike(post)
+                    onInteractionListener.onLike(post)
                 }
             }
 

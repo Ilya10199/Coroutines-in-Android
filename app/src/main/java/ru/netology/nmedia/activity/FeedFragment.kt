@@ -72,6 +72,18 @@ class FeedFragment : Fragment() {
             binding.emptyText.isVisible = state.empty
         }
 
+        viewModel.newPosts.observe(viewLifecycleOwner) {
+            if(it >0){
+                binding.newPosts.visibility = View.VISIBLE
+            }
+        }
+
+        binding.newPosts.setOnClickListener{
+            binding.newPosts.visibility = View.GONE
+            binding.list.scrollToPosition(0)
+            viewModel.loadNewPosts()
+        }
+
         binding.swiperefresh.setOnRefreshListener {
             viewModel.refreshPosts()
         }

@@ -4,8 +4,12 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.map
+import androidx.lifecycle.asLiveData
+import androidx.lifecycle.switchMap
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import ru.netology.nmedia.db.AppDb
 import ru.netology.nmedia.dto.Post
@@ -30,7 +34,25 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
     private val repository: PostRepository =
         PostRepositoryImpl(AppDb.getInstance(context = application).postDao())
 
-    val data: LiveData<FeedModel> = repository.data.map(::FeedModel)
+    val data: LiveData<FeedModel> = repository.data.map{FeedModel(it)}
+        .catch { it.printStackTrace() }
+        .asLiveData(Dispatchers.Default)
+
+    val newPosts: LiveData<Int> = data.switchMap{feedModel ->
+        repository.getNewer(feedModel.posts.firstOrNull()?.id?.toInt() ?: 0)
+            .asLiveData(Dispatchers.Default, 1_000)
+    }
+
+    fun loadNewPosts() = viewModelScope.launch {
+        try {
+            _dataState.value = FeedModelState(loading = true)
+            repository.getNewPosts()
+            _dataState.value = FeedModelState()
+        } catch (e: Exception) {
+            _dataState.value = FeedModelState(error = true)
+        }
+    }
+
     private val _dataState = MutableLiveData<FeedModelState>()
     val dataState: LiveData<FeedModelState>
         get() = _dataState

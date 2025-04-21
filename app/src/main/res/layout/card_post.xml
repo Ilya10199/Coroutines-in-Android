@@ -3,7 +3,7 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:fitsSystemWindows="true"
+
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     >
@@ -84,12 +84,22 @@
             app:layout_constraintTop_toBottomOf="@id/header"
             tools:text="@sample/posts.json/data/content" />
 
+        <ImageView
+            android:id="@+id/attachment"
+            android:layout_width="346dp"
+            android:layout_height="232dp"
+            android:adjustViewBounds="true"
+            app:layout_constraintEnd_toEndOf="@+id/content"
+            app:layout_constraintStart_toStartOf="@+id/content"
+            app:layout_constraintTop_toBottomOf="@+id/content"
+            tools:src="@tools:sample/avatars[10]" />
+
         <androidx.constraintlayout.widget.Barrier
             android:id="@+id/footer"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             app:barrierDirection="bottom"
-            app:constraint_referenced_ids="content" />
+            app:constraint_referenced_ids="attachment" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/like"

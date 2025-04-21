@@ -72,6 +72,15 @@ class FeedFragment : Fragment() {
             binding.emptyText.isVisible = state.empty
         }
 
+        viewModel.data.observe(viewLifecycleOwner) { posts ->
+            val isNewPost = adapter.currentList.size < posts.posts.size
+            adapter.submitList(posts.posts) {
+                if (isNewPost) {
+                    binding.list.scrollToPosition(0)
+                }
+            }
+        }
+
         viewModel.newPosts.observe(viewLifecycleOwner) {
             if(it >0){
                 binding.newPosts.visibility = View.VISIBLE

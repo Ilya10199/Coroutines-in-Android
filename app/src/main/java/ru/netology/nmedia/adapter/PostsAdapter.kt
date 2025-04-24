@@ -20,6 +20,7 @@ interface OnInteractionListener {
     fun onRemove(post: Post) {}
     fun onShare(post: Post) {}
     fun onDisLike(post: Post) {}
+    fun onImage(image: String) {}
 }
 
 class PostsAdapter(
@@ -57,6 +58,11 @@ class PostViewHolder(
                 attachment.load("${BuildConfig.BASE_URL}/media/${post.attachment?.url}")
             } else {
                 attachment.visibility = View.GONE
+            }
+            attachment.setOnClickListener {
+                post.attachment?.let { attach ->
+                    onInteractionListener.onImage(attach.url)
+                }
             }
 
             menu.setOnClickListener {

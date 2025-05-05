@@ -21,5 +21,13 @@
     <string name="channel_remote_name">Server notifications</string>
     <string name="channel_remote_description">Notifications from remote server</string>
     <string name="new_posts">New posts</string>
-    <string name="menu_save">menu save</string>
+    <string name="menu_save" translatable="false">menu save</string>
+    <string name="enter">enter</string>
+    <string name="password">Password</string>
+    <string name="login">Login</string>
+    <string name="sign_in">Sign In</string>
+    <string name="sign_up">Sign Up</string>
+    <string name="sign_out">Sign Out</string>
+    <string name="wrong_login">Wrong login</string>
+    <string name="wrong_password">Wrong password</string>
 </resources>

@@ -184,4 +184,18 @@ class PostRepositoryImpl(private val dao: PostDao) : PostRepository {
             throw UnknownError
         }
     }
+    suspend fun authUser(login: String, pass: String): ru.netology.nmedia.dto.User {
+        try {
+            val response = PostsApi.service.updateUser(login, pass)
+            if (!response.isSuccessful) {
+                throw ApiError(response.code(), response.message())
+            }
+
+            return response.body() ?: throw ApiError(response.code(), response.message())
+        } catch (e: IOException) {
+            throw NetworkError
+        } catch (e: Exception) {
+            throw UnknownError
+        }
+    }
 }

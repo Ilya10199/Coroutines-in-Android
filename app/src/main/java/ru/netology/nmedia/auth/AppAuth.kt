@@ -1,7 +1,7 @@
 package ru.netology.nmedia.auth
 
-import jakarta.inject.Inject
-import jakarta.inject.Singleton
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow

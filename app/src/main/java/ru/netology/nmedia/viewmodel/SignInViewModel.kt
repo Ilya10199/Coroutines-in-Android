@@ -8,7 +8,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
-import jakarta.inject.Inject
+import javax.inject.Inject
 import kotlinx.coroutines.launch
 import ru.netology.nmedia.api.PostsApiService
 import ru.netology.nmedia.dto.User

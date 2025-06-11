@@ -1,6 +1,6 @@
 package ru.netology.nmedia.repository
 
-import jakarta.inject.Inject
+import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow

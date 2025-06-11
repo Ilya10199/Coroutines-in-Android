@@ -4,7 +4,7 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.asLiveData
 import dagger.hilt.android.lifecycle.HiltViewModel
-import jakarta.inject.Inject
+import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import ru.netology.nmedia.auth.AppAuth
 import ru.netology.nmedia.auth.AuthState

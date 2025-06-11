@@ -8,11 +8,11 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
 import dagger.hilt.android.AndroidEntryPoint
-import jakarta.inject.Inject
 import ru.netology.nmedia.R
 import ru.netology.nmedia.auth.AppAuth
 import ru.netology.nmedia.databinding.FragmentSingInBinding
 import ru.netology.nmedia.viewmodel.SignInViewModel
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class SignInFragment : Fragment() {

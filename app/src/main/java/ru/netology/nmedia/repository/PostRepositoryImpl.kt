@@ -1,13 +1,14 @@
 package ru.netology.nmedia.repository
 
-import javax.inject.Inject
+import androidx.paging.Pager
+import androidx.paging.PagingConfig
+import androidx.paging.PagingData
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.flow.map
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.asRequestBody
 import okio.IOException
@@ -25,23 +26,27 @@ import ru.netology.nmedia.error.NetworkError
 import ru.netology.nmedia.error.UnknownError
 import ru.netology.nmedia.model.PhotoModel
 import java.io.File
+import javax.inject.Inject
 
 class PostRepositoryImpl @Inject constructor(
     private val dao: PostDao,
     private val postsApiService: PostsApiService
 ) : PostRepository {
 
-    override val data = dao.getAll().map { it.map { it.toDto() } }
+    override val data: Flow<PagingData<Post>> = Pager(
+        PagingConfig(pageSize = 5, enablePlaceholders = false),
+        pagingSourceFactory = { PostPagingSource(postsApiService) }
+    ).flow
 
     override fun getNewer(id: Int): Flow<Int> = flow {
         while (true) {
             delay(10_000)
             val response = postsApiService.getNewer(id.toLong())
             if (!response.isSuccessful) {
-                throw ApiError(response.code(), response.message())
+                throw ApiError(response.message())
             }
 
-            val body = response.body() ?: throw ApiError(response.code(), response.message())
+            val body = response.body() ?: throw ApiError(response.message())
             dao.backgroundInsert(body.toEntity().map { it.copy(visibility = 0) })
             emit(body.size)
         }
@@ -64,10 +69,10 @@ class PostRepositoryImpl @Inject constructor(
         try {
             val response = postsApiService.getAll()
             if (!response.isSuccessful) {
-                throw ApiError(response.code(), response.message())
+                throw ApiError(response.message())
             }
 
-            val body = response.body() ?: throw ApiError(response.code(), response.message())
+            val body = response.body() ?: throw ApiError(response.message())
             dao.insert(body.toEntity())
         } catch (e: IOException) {
             throw NetworkError
@@ -80,10 +85,10 @@ class PostRepositoryImpl @Inject constructor(
         try {
             val response = postsApiService.save(post)
             if (!response.isSuccessful) {
-                throw ApiError(response.code(), response.message())
+                throw ApiError(response.message())
             }
 
-            val body = response.body() ?: throw ApiError(response.code(), response.message())
+            val body = response.body() ?: throw ApiError(response.message())
             dao.insert(PostEntity.fromDto(body))
         } catch (e: IOException) {
             throw NetworkError
@@ -97,7 +102,7 @@ class PostRepositoryImpl @Inject constructor(
             dao.removeById(id)
             val response = postsApiService.removeById(id)
             if (!response.isSuccessful) {
-                throw ApiError(response.code(), response.message())
+                throw ApiError(response.message())
             }
 
 
@@ -113,7 +118,7 @@ class PostRepositoryImpl @Inject constructor(
             dao.likeById(id)
             val response = postsApiService.likeById(id)
             if (!response.isSuccessful) {
-                throw ApiError(response.code(), response.message())
+                throw ApiError(response.message())
             }
 
 
@@ -131,7 +136,7 @@ class PostRepositoryImpl @Inject constructor(
             dao.dislikeById(id)
             val response = postsApiService.dislikeById(id)
             if (!response.isSuccessful) {
-                throw ApiError(response.code(), response.message())
+                throw ApiError(response.message())
             }
 
 
@@ -156,10 +161,10 @@ class PostRepositoryImpl @Inject constructor(
                 )
             )
             if (!response.isSuccessful) {
-                throw ApiError(response.code(), response.message())
+                throw ApiError(response.message())
             }
 
-            val body = response.body() ?: throw ApiError(response.code(), response.message())
+            val body = response.body() ?: throw ApiError(response.message())
             dao.insert(PostEntity.fromDto(body))
         } catch (e: IOException) {
             throw NetworkError
@@ -179,10 +184,10 @@ class PostRepositoryImpl @Inject constructor(
             )
 
             if (!response.isSuccessful) {
-                throw ApiError(response.code(), response.message())
+                throw ApiError(response.message())
             }
 
-            return (response.body() ?: throw ApiError(response.code(), response.message())) as Media
+            return response.body() ?: throw ApiError(response.message())
         } catch (e: IOException) {
             throw NetworkError
         } catch (e: Exception) {
@@ -194,10 +199,10 @@ class PostRepositoryImpl @Inject constructor(
         try {
             val response = postsApiService.updateUser(login, pass)
             if (!response.isSuccessful) {
-                throw ApiError(response.code(), response.message())
+                throw ApiError(response.message())
             }
 
-            return response.body() ?: throw ApiError(response.code(), response.message())
+            return response.body() ?: throw ApiError(response.message())
         } catch (e: IOException) {
             throw NetworkError
         } catch (e: Exception) {

@@ -1,18 +1,21 @@
 package ru.netology.nmedia.repository
 
+import androidx.paging.ExperimentalPagingApi
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
+import androidx.paging.map
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.asRequestBody
 import okio.IOException
-import ru.netology.nmedia.api.PostsApiService
+import ru.netology.nmedia.api.ApiService
 import ru.netology.nmedia.dao.PostDao
 import ru.netology.nmedia.dto.Attachment
 import ru.netology.nmedia.dto.AttachmentType
@@ -29,51 +32,40 @@ import java.io.File
 import javax.inject.Inject
 
 class PostRepositoryImpl @Inject constructor(
-    private val dao: PostDao,
-    private val postsApiService: PostsApiService
+    private val postDao: PostDao,
+    private val apiService: ApiService,
+    remoteMediator: PostRemoteMediator
 ) : PostRepository {
 
+    @OptIn(ExperimentalPagingApi::class)
     override val data: Flow<PagingData<Post>> = Pager(
-        PagingConfig(pageSize = 5, enablePlaceholders = false),
-        pagingSourceFactory = { PostPagingSource(postsApiService) }
+        config = PagingConfig(pageSize = 25, enablePlaceholders = false),
+        pagingSourceFactory = postDao::pagingSource,
+        remoteMediator = remoteMediator
     ).flow
-
-    override fun getNewer(id: Int): Flow<Int> = flow {
-        while (true) {
-            delay(10_000)
-            val response = postsApiService.getNewer(id.toLong())
-            if (!response.isSuccessful) {
-                throw ApiError(response.message())
+        .map {
+            it.map {
+                it.toDto()
             }
-
-            val body = response.body() ?: throw ApiError(response.message())
-            dao.backgroundInsert(body.toEntity().map { it.copy(visibility = 0) })
-            emit(body.size)
         }
-    }
-        .catch { e -> throw AppError.from(e) }
-        .flowOn(Dispatchers.Default)
 
-
-    override suspend fun getNewPosts() {
-        try {
-            dao.updateNewPosts()
-        } catch (e: IOException) {
-            throw NetworkError
-        } catch (e: Exception) {
-            throw UnknownError
-        }
-    }
 
     override suspend fun getAll() {
         try {
-            val response = postsApiService.getAll()
+            val response = apiService.getAll()
             if (!response.isSuccessful) {
                 throw ApiError(response.message())
             }
 
             val body = response.body() ?: throw ApiError(response.message())
-            dao.insert(body.toEntity())
+            if (postDao.isEmpty()) {
+                postDao.insert(body.toEntity(false))
+                postDao.readNewPost()
+            }
+            if (body.size > postDao.countPosts()) {
+                val notInRoomPosts = body.takeLast(body.size - postDao.countPosts())
+                postDao.insert(notInRoomPosts.toEntity(true))
+            }
         } catch (e: IOException) {
             throw NetworkError
         } catch (e: Exception) {
@@ -83,13 +75,13 @@ class PostRepositoryImpl @Inject constructor(
 
     override suspend fun save(post: Post) {
         try {
-            val response = postsApiService.save(post)
+            val response = apiService.save(post)
             if (!response.isSuccessful) {
                 throw ApiError(response.message())
             }
 
             val body = response.body() ?: throw ApiError(response.message())
-            dao.insert(PostEntity.fromDto(body))
+            postDao.insert(PostEntity.fromDto(body))
         } catch (e: IOException) {
             throw NetworkError
         } catch (e: Exception) {
@@ -99,8 +91,8 @@ class PostRepositoryImpl @Inject constructor(
 
     override suspend fun removeById(id: Long) {
         try {
-            dao.removeById(id)
-            val response = postsApiService.removeById(id)
+            postDao.removeById(id)
+            val response = apiService.removeById(id)
             if (!response.isSuccessful) {
                 throw ApiError(response.message())
             }
@@ -115,36 +107,36 @@ class PostRepositoryImpl @Inject constructor(
 
     override suspend fun likeById(id: Long) {
         try {
-            dao.likeById(id)
-            val response = postsApiService.likeById(id)
+            postDao.likeById(id)
+            val response = apiService.likeById(id)
             if (!response.isSuccessful) {
                 throw ApiError(response.message())
             }
 
 
         } catch (e: IOException) {
-            dao.dislikeById(id)
+            postDao.dislikeById(id)
             throw NetworkError
         } catch (e: Exception) {
-            dao.dislikeById(id)
+            postDao.dislikeById(id)
             throw UnknownError
         }
     }
 
     override suspend fun dislikeById(id: Long) {
         try {
-            dao.dislikeById(id)
-            val response = postsApiService.dislikeById(id)
+            postDao.dislikeById(id)
+            val response = apiService.dislikeById(id)
             if (!response.isSuccessful) {
                 throw ApiError(response.message())
             }
 
 
         } catch (e: IOException) {
-            dao.likeById(id)
+            postDao.likeById(id)
             throw NetworkError
         } catch (e: Exception) {
-            dao.likeById(id)
+            postDao.likeById(id)
             throw UnknownError
         }
     }
@@ -152,7 +144,7 @@ class PostRepositoryImpl @Inject constructor(
     override suspend fun saveWithAttachment(post: Post, photoModel: PhotoModel) {
         try {
             val media = upload(photoModel.file)
-            val response = postsApiService.save(
+            val response = apiService.save(
                 post.copy(
                     attachment = Attachment(
                         url = media.id,
@@ -165,7 +157,7 @@ class PostRepositoryImpl @Inject constructor(
             }
 
             val body = response.body() ?: throw ApiError(response.message())
-            dao.insert(PostEntity.fromDto(body))
+            postDao.insert(PostEntity.fromDto(body))
         } catch (e: IOException) {
             throw NetworkError
         } catch (e: Exception) {
@@ -173,9 +165,34 @@ class PostRepositoryImpl @Inject constructor(
         }
     }
 
+    override fun getNewerCount(id: Long): Flow<Int> = flow {
+        while (true) {
+            delay(10_000L)
+            val response = apiService.getNewer(id)
+            if (!response.isSuccessful) {
+                throw ApiError(response.message())
+            }
+            val body = response.body() ?: throw ApiError(response.message())
+
+            postDao.insert(body.toEntity(false))
+            val newPosts = postDao.getNewer()
+            emit(newPosts.size)
+        }
+    }
+        .catch { e -> AppError.from(e) }
+        .flowOn(Dispatchers.Default)
+
+
+    override suspend fun readPosts() {
+        postDao.readNewPost()
+
+    }
+
+
+
     private suspend fun upload(file: File): Media {
         try {
-            val response = postsApiService.upload(
+            val response = apiService.upload(
                 MultipartBody.Part.createFormData(
                     "file",
                     file.name,
@@ -197,7 +214,7 @@ class PostRepositoryImpl @Inject constructor(
 
     suspend fun authUser(login: String, pass: String): ru.netology.nmedia.dto.User {
         try {
-            val response = postsApiService.updateUser(login, pass)
+            val response = apiService.updateUser(login, pass)
             if (!response.isSuccessful) {
                 throw ApiError(response.message())
             }

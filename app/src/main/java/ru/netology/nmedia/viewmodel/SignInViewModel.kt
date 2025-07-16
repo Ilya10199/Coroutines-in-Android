@@ -10,14 +10,14 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import kotlinx.coroutines.launch
-import ru.netology.nmedia.api.PostsApiService
+import ru.netology.nmedia.api.ApiService
 import ru.netology.nmedia.dto.User
 import ru.netology.nmedia.model.FeedModelState
 
 
 @HiltViewModel
 class SignInViewModel @Inject constructor(
-    private val postsApiService: PostsApiService
+    private val apiService: ApiService
 ) : ViewModel() {
 
     private val _data = MutableLiveData<User>()
@@ -29,7 +29,7 @@ class SignInViewModel @Inject constructor(
         get() = _dataState
 
     fun loginAttempt(login: String, password: String, @ApplicationContext context : Context) = viewModelScope.launch {
-        val response = postsApiService.updateUser(login, password)
+        val response = apiService.updateUser(login, password)
         if (!response.isSuccessful) {
             Toast.makeText(context, "Incorrect login or password", Toast.LENGTH_LONG).show()
             return@launch

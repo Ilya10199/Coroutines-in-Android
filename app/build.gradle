@@ -39,16 +39,17 @@ android {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
             manifestPlaceholders.usesCleartextTraffic = false
-            buildConfigField "String", "BASE_URL", '"https://netomedia.ru"'
+            buildConfigField "String", "BASE_URL", '"https://netomedia.ru/api/"'
         }
         debug {
             manifestPlaceholders.usesCleartextTraffic = true
-            buildConfigField "String", "BASE_URL", '"http://10.0.2.2:9999"'
+            buildConfigField "String", "BASE_URL", '"http://10.0.2.2:9999/api/slow/"'
         }
     }
 }
 
 dependencies {
+    implementation 'com.google.ads.interactivemedia.v3:interactivemedia:3.37.0'
     def core_version = "1.16.0"
     def appcompat_version = "1.7.1"
     def constraintlayout_version = "2.2.1"

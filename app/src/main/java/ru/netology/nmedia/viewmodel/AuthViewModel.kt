@@ -13,7 +13,7 @@ import ru.netology.nmedia.auth.AuthState
 class AuthViewModel @Inject constructor(
     private val appAuth: AppAuth
 ) : ViewModel() {
-    val data : LiveData<AuthState> = appAuth
+    val data: LiveData<AuthState> = appAuth
         .authStateFlow
         .asLiveData(Dispatchers.Default)
     val authenticated: Boolean

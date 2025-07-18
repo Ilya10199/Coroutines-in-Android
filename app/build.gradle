@@ -39,11 +39,11 @@ android {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
             manifestPlaceholders.usesCleartextTraffic = false
-            buildConfigField "String", "BASE_URL", '"https://netomedia.ru/api/"'
+            buildConfigField "String", "BASE_URL", '"https://netomedia.ru"'
         }
         debug {
             manifestPlaceholders.usesCleartextTraffic = true
-            buildConfigField "String", "BASE_URL", '"http://10.0.2.2:9999/api/slow/"'
+            buildConfigField "String", "BASE_URL", '"http://10.0.2.2:9999"'
         }
     }
 }
